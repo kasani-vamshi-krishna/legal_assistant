@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Law Bot</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <div class="index-container">
+        <h1 class="form-heading">Welcome to LAWBOT</h1>
+        <p class="tagline">Your personal AI legal assistant.</p>
+
+        <div class="button-group">
+            <a href="{{ url_for('login') }}"><button>Login</button></a>
+            <a href="{{ url_for('register') }}"><button>Register</button></a>
+        </div>
+    </div>
+</body>
+</html>

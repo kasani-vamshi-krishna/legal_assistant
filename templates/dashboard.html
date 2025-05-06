@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <div class="heading">
+        <p>LAW BOT</p>
+    </div>
+    
+    <div class="chat-container">
+        <h1>Welcome, {{ username }}!</h1>
+        <div class="chat-selection">
+            <h3>Select a chat:</h3>
+            <ul>
+                {% for chat in chats %}
+                    <li>
+                        <button onclick="loadChat('{{ chat._id }}')">{{ chat._id }}</button>
+                    </li>
+                {% endfor %}
+            </ul>
+            <button id="newChatButton">New Chat</button>
+        </div>
+        <div class="chat-box" id="chatBox">
+            <!-- Messages will be dynamically inserted here -->
+        </div>
+        <form id="queryForm" class="query-form">
+            <input type="text" name="query" placeholder="Ask a legal question..." required>
+            <input type="hidden" name="chat_id" id="chat_id" value="">
+            <input type="submit" value="Ask">
+        </form>
+        <a class="logout" href="{{ url_for('logout') }}">Logout</a>
+    </div>
+
+    <script>
+        // Create new chat
+        document.getElementById('newChatButton').addEventListener('click', function() {
+            fetch('/new_chat', {
+                method: 'POST',
+            })
+            .then(response => response.json())
+            .then(data => {
+                loadChat(data.chat_id);  // Load the newly created chat
+            })
+            .catch(error => console.error('Error:', error));
+        });
+
+        // Load chat messages
+        // Load chat messages
+        function loadChat(chatId) {
+            document.getElementById('chat_id').value = chatId;  // Set chat_id in form
+            const chatBox = document.getElementById('chatBox');
+            chatBox.innerHTML = '';  // Clear chat box before loading new messages
+
+            // Fetch messages from the chat
+            fetch(`/get_chat/${chatId}`)
+                .then(response => response.json())
+                .then(data => {
+                    data.messages.forEach(message => {
+                        const messageDiv = document.createElement('div');
+                        messageDiv.className = `message ${message.sender}`;
+                        messageDiv.innerText = message.text;
+                        chatBox.appendChild(messageDiv);  // Append each message to the chat box
+                    });
+                    chatBox.scrollTop = chatBox.scrollHeight;  // Scroll to bottom
+                })
+                .catch(error => console.error('Error:', error));
+        }
+
+
+        document.getElementById('queryForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const formData = new FormData(this);
+            fetch('/ask', {
+                method: 'POST',
+                body: formData,
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Append the user's question
+                const userQuery = document.createElement('div');
+                userQuery.className = 'message user';
+                userQuery.innerText = `You: ${formData.get('query')}`;
+                document.getElementById('chatBox').appendChild(userQuery);
+
+                // Append the response from the bot
+                const botResponse = document.createElement('div');
+                botResponse.className = 'message bot';
+                botResponse.innerText = data.response;
+                document.getElementById('chatBox').appendChild(botResponse);
+
+                document.getElementById('chatBox').scrollTop = chatBox.scrollHeight;  // Scroll to bottom
+            })
+            .catch(error => console.error('Error:', error));
+        });
+    </script>
+</body>
+</html>
