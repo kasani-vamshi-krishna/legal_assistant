@@ -1,101 +1,692 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard</title>
-    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='styles.css') }}">
-</head>
-<body>
-    <div class="heading">
-        <p>LAW BOT</p>
-    </div>
-    
-    <div class="chat-container">
-        <h1>Welcome, {{ username }}!</h1>
-        <div class="chat-selection">
-            <h3>Select a chat:</h3>
-            <ul>
-                {% for chat in chats %}
-                    <li>
-                        <button onclick="loadChat('{{ chat._id }}')">{{ chat._id }}</button>
-                    </li>
-                {% endfor %}
-            </ul>
-            <button id="newChatButton">New Chat</button>
-        </div>
-        <div class="chat-box" id="chatBox">
-            <!-- Messages will be dynamically inserted here -->
-        </div>
-        <form id="queryForm" class="query-form">
-            <input type="text" name="query" placeholder="Ask a legal question..." required>
-            <input type="hidden" name="chat_id" id="chat_id" value="">
-            <input type="submit" value="Ask">
-        </form>
-        <a class="logout" href="{{ url_for('logout') }}">Logout</a>
-    </div>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>LAW BOT - Expert Legal Assistance</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+    <style>
+        /* CSS Variables for easier color management */
+        :root {
+            --primary-blue: #0056b3; /* Darker blue for accents */
+            --secondary-blue: #e0f2f7; /* Light blue background */
+            --dark-navy: #0f172a; /* Heading background */
+            --sidebar-bg: #1e293b; /* Sidebar background */
+            --sidebar-item-bg: #334155; /* Sidebar button background */
+            --sidebar-item-hover: #475569; /* Sidebar button hover */
+            --active-chat-bg: #003d80; /* Active chat highlight */
+            --text-white: #ffffff;
+            --text-dark: #1f2937; /* Dark text for body */
+            --message-user-bg: #3b82f6; /* User message blue */
+            --message-bot-bg: #e5e7eb; /* Bot message light grey */
+            --border-color: #cbd5e1; /* Light border */
+            --input-bg: #f1f5f9; /* Input form background */
+            --success-green: #10b981; /* Ask button green */
+            --danger-red: #ef4444; /* Logout red */
+        }
 
-    <script>
-        // Create new chat
-        document.getElementById('newChatButton').addEventListener('click', function() {
-            fetch('/new_chat', {
-                method: 'POST',
-            })
-            .then(response => response.json())
-            .then(data => {
-                loadChat(data.chat_id);  // Load the newly created chat
-            })
-            .catch(error => console.error('Error:', error));
-        });
+        body {
+            margin: 0;
+            font-family: 'Inter', sans-serif;
+            background-color: var(--secondary-blue);
+            display: flex;
+            flex-direction: column; /* Stack heading, container, form vertically */
+            height: 100vh;
+            color: var(--text-dark);
+            overflow: hidden; /* Prevent body scroll */
+        }
 
-        // Load chat messages
-        // Load chat messages
-        function loadChat(chatId) {
-            document.getElementById('chat_id').value = chatId;  // Set chat_id in form
-            const chatBox = document.getElementById('chatBox');
-            chatBox.innerHTML = '';  // Clear chat box before loading new messages
-
-            // Fetch messages from the chat
-            fetch(`/get_chat/${chatId}`)
-                .then(response => response.json())
-                .then(data => {
-                    data.messages.forEach(message => {
-                        const messageDiv = document.createElement('div');
-                        messageDiv.className = `message ${message.sender}`;
-                        messageDiv.innerText = message.text;
-                        chatBox.appendChild(messageDiv);  // Append each message to the chat box
-                    });
-                    chatBox.scrollTop = chatBox.scrollHeight;  // Scroll to bottom
-                })
-                .catch(error => console.error('Error:', error));
+        .heading {
+            background-color: var(--dark-navy);
+            color: var(--text-white);
+            padding: 1rem 2rem;
+            font-size: 1.8rem;
+            font-weight: 700;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            display: flex;
+            align-items: center;
+            flex-shrink: 0; /* Prevent heading from shrinking */
+        }
+        .heading i {
+            margin-right: 10px;
         }
 
 
-        document.getElementById('queryForm').addEventListener('submit', function(event) {
-            event.preventDefault();
+        .chat-container {
+            display: flex; /* Split sidebar and chat box horizontally */
+            flex: 1; /* Takes all available vertical space between heading and form */
+            overflow: hidden; /* Hide overflow from children scrollbars */
+        }
+
+        .chat-selection {
+            width: 280px; /* Wider sidebar */
+            background-color: var(--sidebar-bg);
+            color: var(--text-white);
+            padding: 1.5rem 1rem;
+            overflow-y: auto; /* Enable vertical scrolling for sidebar content */
+            flex-shrink: 0; /* Prevent sidebar from shrinking */
+            display: flex;
+            flex-direction: column; /* Stack sidebar content vertically */
+            border-right: 1px solid #334155; /* Separator line */
+        }
+
+        .chat-selection h3 {
+            margin-top: 0;
+            margin-bottom: 1.5rem;
+            font-size: 1.3rem;
+            font-weight: 600;
+            border-bottom: 1px solid #475569; /* Separator */
+            padding-bottom: 1rem;
+            display: flex;
+            align-items: center;
+        }
+         .chat-selection h3 i {
+             margin-right: 10px;
+             color: #94a3b8;
+         }
+
+
+        .chat-selection h4 {
+            margin-top: 0.5rem;
+            margin-bottom: 0.8rem;
+            font-size: 1rem;
+            font-weight: 500;
+            color: #cbd5e1;
+             display: flex;
+            align-items: center;
+        }
+         .chat-selection h4 i {
+            margin-right: 8px;
+            color: #94a3b8;
+         }
+
+        .chat-selection ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            flex-grow: 1; /* Makes the list take available space in the column */
+        }
+
+        .chat-selection li {
+             margin-bottom: 0.4rem;
+             overflow: hidden; /* Contain button content */
+        }
+
+
+        .chat-selection button {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            background-color: var(--sidebar-item-bg);
+            border: none;
+            color: var(--text-white);
+            border-radius: 6px;
+            cursor: pointer;
+            text-align: left;
+            font-size: 1rem;
+            transition: background-color 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem; /* Space between icon and text */
+            white-space: nowrap; /* Prevent text wrapping */
+            overflow: hidden; /* Hide overflowing text */
+            text-overflow: ellipsis; /* Add ellipsis for overflowed text */
+        }
+
+        .chat-selection button i {
+            color: #94a3b8;
+            font-size: 1.1rem;
+        }
+
+        .chat-selection button:hover {
+            background-color: var(--sidebar-item-hover);
+        }
+
+        .chat-selection button.active {
+            background-color: var(--active-chat-bg);
+            font-weight: 600;
+             color: var(--text-white);
+        }
+         .chat-selection button.active i {
+             color: var(--text-white);
+         }
+
+        #newChatButton {
+            background-color: var(--primary-blue);
+            margin-top: 1rem; /* Space above the button */
+            margin-bottom: 1.5rem;
+            font-weight: 600;
+        }
+
+        #newChatButton:hover {
+            background-color: #003d80;
+        }
+
+        #newChatButton i {
+             color: var(--text-white);
+        }
+
+
+        .logout {
+            color: var(--danger-red);
+            text-decoration: none;
+            font-weight: 500;
+            margin-top: auto; /* Push logout to the bottom */
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center; /* Center icon and text */
+            gap: 0.5rem;
+            padding-top: 1rem;
+            border-top: 1px solid #475569; /* Separator */
+            transition: color 0.2s ease;
+        }
+
+        .logout:hover {
+             color: #dc2626;
+        }
+
+        .chat-box {
+            flex: 1; /* Takes all remaining width in chat-container */
+            display: flex;
+            flex-direction: column;
+            padding: 1.5rem;
+            background-color: #ffffff;
+            overflow-y: auto; /* Enable vertical scrolling */
+            position: relative;
+            /* No border-left here, as chat-selection has border-right */
+            box-shadow: inset 5px 0 5px -5px rgba(0,0,0,0.05); /* Inner shadow for separation */
+        }
+
+        /* Style for scrollbar (Optional, may not work in all browsers) */
+        .chat-box::-webkit-scrollbar {
+            width: 8px;
+        }
+        .chat-box::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        .chat-box::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 4px;
+        }
+        .chat-box::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+
+
+        .message {
+            max-width: 75%;
+            padding: 0.8rem 1.2rem;
+            margin: 0.6rem 0;
+            border-radius: 18px;
+            white-space: pre-wrap;
+            line-height: 1.5;
+            font-size: 1rem;
+            word-wrap: break-word;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        }
+
+        .message.user {
+            align-self: flex-end;
+            background-color: var(--message-user-bg);
+            color: var(--text-white);
+            border-bottom-right-radius: 4px; /* Pointed corner on user side */
+        }
+
+        .message.bot {
+            align-self: flex-start;
+            background-color: var(--message-bot-bg);
+            color: var(--text-dark);
+            border-bottom-left-radius: 4px; /* Pointed corner on bot side */
+        }
+
+        .placeholder {
+            margin: auto; /* Center horizontally and vertically */
+            text-align: center;
+            color: #6b7280;
+            font-size: 1.1rem;
+            padding: 20px;
+        }
+
+        .placeholder i {
+            font-size: 3rem;
+            margin-bottom: 0.5rem;
+            color: #ccc;
+        }
+         .placeholder p {
+             margin: 5px 0;
+         }
+
+
+        .query-form {
+            display: flex; /* Ensure form is visible when chat is loaded */
+            padding: 1rem 1.5rem;
+            border-top: 1px solid var(--border-color);
+            background-color: var(--input-bg);
+            align-items: center;
+            gap: 1rem;
+            flex-shrink: 0; /* Prevent form from shrinking */
+        }
+
+        .query-form input[type="text"] {
+            flex: 1;
+            padding: 0.9rem 1.2rem;
+            border: 1px solid var(--border-color);
+            border-radius: 25px;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+         .query-form input[type="text"]:focus {
+             border-color: var(--primary-blue);
+             box-shadow: 0 0 0 0.1rem rgba(0, 86, 179, 0.25);
+         }
+
+
+        .query-form button[type="submit"] { /* Changed input type submit to button */
+            padding: 0.8rem 1.5rem;
+            background-color: var(--success-green);
+            color: var(--text-white);
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: background-color 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .query-form button[type="submit"]:hover {
+            background-color: #059669;
+        }
+
+         .query-form button[type="submit"] i {
+             font-size: 1.1rem;
+         }
+
+        /* Typing animation */
+        .typing {
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+            /* Removed margin, let message padding handle spacing */
+        }
+
+        .typing-dot {
+            width: 8px;
+            height: 8px;
+            background-color: #9ca3af;
+            border-radius: 50%;
+            animation: blink 1.4s infinite both;
+        }
+
+        .typing-dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes blink {
+            0%, 80%, 100% {
+                opacity: 0;
+            }
+            40% {
+                opacity: 1;
+            }
+        }
+
+
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .heading {
+            padding: 0.8rem 1rem;
+            font-size: 1.5rem;
+        }
+        .chat-selection {
+            width: 200px; /* Smaller sidebar on tablets */
+            padding: 1rem 0.5rem;
+        }
+         .chat-selection h3 {
+             font-size: 1.1rem;
+             padding-bottom: 0.8rem;
+             margin-bottom: 1rem;
+         }
+         .chat-selection h3 i {
+            margin-right: 8px;
+         }
+         .chat-selection h4 {
+             font-size: 0.9rem;
+              margin-bottom: 0.6rem;
+         }
+          .chat-selection h4 i {
+             margin-right: 6px;
+          }
+        .chat-selection button {
+            padding: 0.6rem 0.8rem;
+            font-size: 0.9rem;
+            gap: 0.6rem;
+        }
+         .chat-selection button i {
+             font-size: 1rem;
+         }
+        #newChatButton {
+            margin-top: 0.8rem;
+            margin-bottom: 1.2rem;
+        }
+         .logout {
+             font-size: 0.9rem;
+             padding-top: 0.8rem;
+         }
+
+
+        .chat-box {
+            padding: 1rem;
+        }
+        .message {
+            max-width: 90%;
+            padding: 0.7rem 1rem;
+        }
+        .query-form {
+            padding: 0.8rem 1rem;
+            gap: 0.8rem;
+        }
+        .query-form input[type="text"] {
+            padding: 0.8rem 1rem;
+            font-size: 0.9rem;
+        }
+        .query-form button[type="submit"] {
+            padding: 0.7rem 1.2rem;
+            font-size: 0.9rem;
+            gap: 0.4rem;
+        }
+         .query-form button[type="submit"] i {
+             font-size: 1rem;
+         }
+    }
+
+     @media (max-width: 480px) {
+         .heading {
+            padding: 0.6rem 0.8rem;
+            font-size: 1.2rem;
+         }
+         .chat-selection {
+            width: 150px; /* Smaller sidebar on phones */
+            padding: 0.8rem 0.3rem;
+         }
+          .chat-selection h3 {
+            font-size: 1rem;
+             padding-bottom: 0.5rem;
+             margin-bottom: 0.8rem;
+             justify-content: center; /* Center text and icon */
+          }
+          .chat-selection h3 i {
+              margin-right: 0; /* Remove margin, icon above text if flex-direction changes */
+          }
+
+          .chat-selection h4 {
+              display: none; /* Hide 'Your Chats' title on very small screens */
+          }
+         .chat-selection button {
+            font-size: 0.8rem;
+            padding: 0.5rem 0.3rem;
+            gap: 0.3rem;
+            justify-content: center; /* Center text and icon */
+         }
+          .chat-selection button i {
+              /* font-size is already smaller */
+              margin-right: 0; /* Remove margin */
+          }
+         #newChatButton {
+             margin-top: 0.6rem;
+             margin-bottom: 1rem;
+         }
+         .logout {
+             font-size: 0.8rem;
+              padding-top: 0.6rem;
+         }
+          .logout i {
+             /* font-size is already smaller */
+          }
+
+         .chat-box {
+            padding: 0.8rem;
+         }
+         .message {
+            max-width: 95%;
+            padding: 0.6rem 0.8rem;
+         }
+         .query-form {
+            padding: 0.6rem 0.8rem;
+            gap: 0.6rem;
+         }
+         .query-form input[type="text"] {
+             padding: 0.6rem 0.8rem;
+             font-size: 0.85rem;
+         }
+          .query-form button[type="submit"] {
+            padding: 0.6rem 1rem;
+            font-size: 0.85rem;
+            gap: 0.3rem;
+          }
+     }
+
+
+    </style>
+</head>
+<body>
+    <div class="heading">
+        <i class="fas fa-balance-scale"></i> LAW BOT
+    </div>
+
+    <div class="chat-container">
+        <div class="chat-selection">
+            <h3><i class="fas fa-user-circle"></i> {{ username }}</h3>
+            <h4><i class="fas fa-comments"></i> Your Chats</h4>
+            <ul>
+                {% for chat in chats %}
+                    <li>
+                        <button data-chat-id="{{ chat._id }}" onclick="loadChat('{{ chat._id }}')" {% if loop.first %}class="active"{% endif %}>
+                            <i class="fas fa-comment-alt"></i> Chat {{ loop.index }}
+                            </button>
+                    </li>
+                {% endfor %}
+            </ul>
+            <button id="newChatButton"><i class="fas fa-plus"></i> New Chat</button>
+            <a class="logout" href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt"></i> Logout</a>
+        </div>
+
+        <div class="chat-box" id="chatBox">
+            <div id="placeholder" class="placeholder">
+                <i class="fas fa-comments"></i>
+                <p>Select a chat or create a new one to get started!</p>
+                <p>Please remember this bot provides *general information* only and is not a substitute for professional legal advice.</p>
+            </div>
+             </div>
+    </div>
+
+    <form id="queryForm" class="query-form" style="display: none;">
+        <input type="text" name="query" placeholder="Ask a legal question about Indian law..." required>
+        <input type="hidden" name="chat_id" id="chat_id">
+        <button type="submit"><i class="fas fa-paper-plane"></i> Ask</button> </form>
+
+    <script>
+        const chatBox = document.getElementById('chatBox');
+        const queryForm = document.getElementById('queryForm');
+        const initialPlaceholder = document.getElementById('placeholder'); // Reference the initial placeholder
+
+        // --- Event Listener for New Chat Button ---
+        document.getElementById('newChatButton').addEventListener('click', function () {
+            fetch('/new_chat', { method: 'POST' })
+                .then(res => res.json())
+                .then(data => {
+                    // Add the new chat button to the list in the sidebar
+                    const chatListUl = document.querySelector('.chat-selection ul');
+                    const newChatLi = document.createElement('li');
+                    const newButton = document.createElement('button');
+
+                    // Basic index calculation - consider getting this from backend if needed
+                    // This assumes chats are added sequentially and not deleted/reordered
+                    const chatIndex = chatListUl.children.length + 1;
+                    newButton.setAttribute('data-chat-id', data.chat_id); // Set data attribute
+                    newButton.onclick = () => loadChat(data.chat_id);
+                    newButton.innerHTML = `<i class="fas fa-comment-alt"></i> Chat ${chatIndex}`; // Use comment-alt icon
+                    newChatLi.appendChild(newButton);
+                    chatListUl.appendChild(newChatLi); // Add to the list
+
+                    loadChat(data.chat_id); // Load the new chat
+                })
+                .catch(err => console.error('New chat error:', err));
+        });
+
+        // --- Function to Load Chat History ---
+        function loadChat(chatId) {
+            document.getElementById('chat_id').value = chatId;
+            chatBox.innerHTML = ''; // Clear current messages and any existing placeholder
+
+            // Update active button state
+            document.querySelectorAll('.chat-selection button').forEach(btn => btn.classList.remove('active'));
+            // Find the button using the data attribute
+            const activeButton = document.querySelector(`.chat-selection button[data-chat-id="${chatId}"]`);
+            if (activeButton) {
+                activeButton.classList.add('active');
+            }
+
+            queryForm.style.display = 'flex'; // Show the query form when a chat is loaded
+
+
+            fetch(`/get_chat/${chatId}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.messages && data.messages.length > 0) {
+                        data.messages.forEach(msg => {
+                            appendMessage(msg.sender, msg.text);
+                        });
+                    } else {
+                        // Show 'empty chat' placeholder if no messages were fetched
+                        const emptyPlaceholder = document.createElement('div');
+                        emptyPlaceholder.className = 'placeholder';
+                        emptyPlaceholder.innerHTML = '<i class="fas fa-comment-dots"></i><p>This chat is empty. Ask your first question!</p>';
+                        chatBox.appendChild(emptyPlaceholder);
+                    }
+                    chatBox.scrollTop = chatBox.scrollHeight; // Scroll to bottom
+                })
+                .catch(err => {
+                    console.error('Load chat error:', err);
+                    // Display an error message in the chat box
+                    chatBox.innerHTML = '<div class="placeholder" style="color: var(--danger-red);"><i class="fas fa-exclamation-triangle"></i><p>Error loading chat history.</p><p>Please try again.</p></div>';
+                    queryForm.style.display = 'none'; // Hide form on error
+                });
+        }
+
+        // --- Event Listener for Query Form Submission ---
+        document.getElementById('queryForm').addEventListener('submit', function (e) {
+            e.preventDefault();
             const formData = new FormData(this);
+            const queryInput = this.querySelector('input[name="query"]');
+
+            const userQuery = formData.get('query').trim(); // Trim whitespace
+            if (!userQuery) return; // Prevent sending empty messages
+
+             // Remove any existing placeholder before adding messages
+             const currentPlaceholder = chatBox.querySelector('.placeholder');
+             if(currentPlaceholder) currentPlaceholder.remove();
+
+            // Show user message
+            appendMessage('user', userQuery);
+
+            // Add typing animation immediately after sending user message
+            const typingDiv = document.createElement('div');
+            typingDiv.className = 'message bot'; // Use message class for styling
+            typingDiv.id = 'typing-indicator'; // Use a specific ID
+            typingDiv.innerHTML = `
+                <div class="typing">
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                </div>`;
+            chatBox.appendChild(typingDiv);
+            chatBox.scrollTop = chatBox.scrollHeight; // Scroll to show typing indicator
+
+            // Clear input field after sending
+            queryInput.value = '';
+
+            // Optional: Disable input and button while waiting for response
+            queryInput.disabled = true;
+            this.querySelector('button[type="submit"]').disabled = true;
+
+
             fetch('/ask', {
                 method: 'POST',
-                body: formData,
+                body: formData
             })
-            .then(response => response.json())
-            .then(data => {
-                // Append the user's question
-                const userQuery = document.createElement('div');
-                userQuery.className = 'message user';
-                userQuery.innerText = `You: ${formData.get('query')}`;
-                document.getElementById('chatBox').appendChild(userQuery);
+                .then(res => res.json())
+                .then(data => {
+                    // Remove typing animation
+                    const typingElement = document.getElementById('typing-indicator');
+                    if (typingElement) typingElement.remove();
 
-                // Append the response from the bot
-                const botResponse = document.createElement('div');
-                botResponse.className = 'message bot';
-                botResponse.innerText = data.response;
-                document.getElementById('chatBox').appendChild(botResponse);
+                    // Show bot response
+                    appendMessage('bot', data.response);
 
-                document.getElementById('chatBox').scrollTop = chatBox.scrollHeight;  // Scroll to bottom
-            })
-            .catch(error => console.error('Error:', error));
+                    // Re-enable input and button
+                    queryInput.disabled = false;
+                    this.querySelector('button[type="submit"]').disabled = false;
+                    queryInput.focus(); // Put cursor back in the input
+
+                })
+                .catch(err => {
+                    // Remove typing animation
+                    const typingElement = document.getElementById('typing-indicator');
+                    if (typingElement) typingElement.remove();
+
+                    console.error('Ask error:', err);
+                    // Display an error message in the chat box
+                    appendMessage('bot', 'Sorry, something went wrong. Please try again.');
+
+                    // Re-enable input and button
+                    queryInput.disabled = false;
+                    this.querySelector('button[type="submit"]').disabled = false;
+                    queryInput.focus();
+                });
         });
+
+        // --- Helper function to append messages ---
+        function appendMessage(sender, text) {
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `message ${sender}`;
+            msgDiv.innerText = text; // Use innerText for plain text
+            chatBox.appendChild(msgDiv);
+            chatBox.scrollTop = chatBox.scrollHeight; // Auto-scroll to bottom
+        }
+
+
+        // --- Initial Load Logic ---
+        // Load the first chat on page load if chats exist
+        document.addEventListener('DOMContentLoaded', function () {
+            const chatButtons = document.querySelectorAll('.chat-selection ul li button');
+            if (chatButtons.length > 0) {
+                // Load the first chat automatically
+                 const firstChatId = chatButtons[0].getAttribute('data-chat-id'); // Use data attribute
+                 if (firstChatId) {
+                    loadChat(firstChatId);
+                 } else {
+                     console.error("First chat button missing data-chat-id attribute!");
+                     // Fallback: show initial placeholder if data-chat-id is missing unexpectedly
+                     initialPlaceholder.style.display = 'block';
+                     queryForm.style.display = 'none';
+                 }
+            } else {
+                // If no chats exist at all, show the initial placeholder and hide the form
+                initialPlaceholder.style.display = 'block'; // Ensure initial placeholder is visible
+                queryForm.style.display = 'none'; // Hide form
+            }
+        });
+
     </script>
 </body>
 </html>

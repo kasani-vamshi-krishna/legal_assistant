@@ -3,12 +3,96 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login</title>
+    <title>LawBot Login</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <style>
+        body {
+            background-color: #0e1a2b;
+            color: #ffffff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .form-container {
+            background-color: #152238;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.2);
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .form-heading {
+            text-align: center;
+            font-size: 28px;
+            margin-bottom: 30px;
+            color: #ffd700;
+        }
+
+        .styled-form label {
+            display: block;
+            margin-bottom: 8px;
+            color: #cbd5e1;
+            font-weight: 500;
+        }
+
+        .styled-form input[type="text"],
+        .styled-form input[type="password"] {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #3b4252;
+            border-radius: 5px;
+            background-color: #1f2a3a;
+            color: #ffffff;
+        }
+
+        .styled-form input[type="submit"] {
+            width: 100%;
+            padding: 10px;
+            background-color: #ffd700;
+            color: #0e1a2b;
+            font-weight: bold;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .styled-form input[type="submit"]:hover {
+            background-color: #e6c200;
+        }
+
+        .flash-msg {
+            color: #ff6b6b;
+            text-align: center;
+            margin-top: 15px;
+        }
+
+        .form-footer {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 14px;
+            color: #9ca3af;
+        }
+
+        .form-footer a {
+            color: #ffd700;
+            text-decoration: none;
+        }
+
+        .form-footer a:hover {
+            text-decoration: underline;
+        }
+    </style>
 </head>
 <body>
     <div class="form-container">
-        <h1 class="form-heading">Welcome Back</h1>
+        <h1 class="form-heading">Welcome Back to LawBot</h1>
         <form method="POST" class="styled-form">
             <label for="username">Username:</label>
             <input type="text" name="username" required>
